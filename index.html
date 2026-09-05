@@ -2,278 +2,378 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Master Farm Simulator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Realistic 2D Farm Tycoon</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
-        
-        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        body { background: #1a2e10; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
-        /* UI Overlay */
+        /* Top Bar Header */
         .top-bar {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(15, 30, 15, 0.85); border: 2px solid #ffd700;
-            padding: 12px 20px; border-radius: 12px; color: #ffd700; font-size: 20px; font-weight: bold;
-            z-index: 10; backdrop-filter: blur(5px);
+            width: 100%; max-width: 500px; background: #0f1d0a; border-bottom: 3px solid #fbc02d;
+            padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        .coins { font-size: 20px; font-weight: bold; color: #fbc02d; }
+
+        /* Main Container */
+        .container { width: 100%; max-width: 500px; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
 
         /* Menu Overlay */
-        .menu-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 20, 10, 0.9); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; gap: 20px; z-index: 20;
+        .menu-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d1a0a;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; z-index: 200;
         }
-        .menu-title { font-size: 32px; color: #ffcc00; text-shadow: 0 0 10px #ff9900; margin-bottom: 10px; }
+        .menu-title { font-size: 28px; font-weight: bold; color: #fbc02d; text-shadow: 0 2px 5px #000; }
         .menu-btn {
-            width: 250px; padding: 15px; font-size: 18px; font-weight: bold;
-            background: linear-gradient(180deg, #4CAF50, #2E7D32); color: #fff;
-            border: 2px solid #a3e635; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
+            width: 80%; max-width: 300px; padding: 15px; font-size: 18px; font-weight: bold;
+            background: linear-gradient(180deg, #4caf50, #2e7d32); color: white; border: 2px solid #8bc34a;
+            border-radius: 12px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .menu-btn:active { transform: scale(0.95); }
+        .menu-btn:active { transform: scale(0.98); }
 
-        /* Action Controls Panel */
-        .control-panel {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 12px; background: rgba(0, 0, 0, 0.7);
-            padding: 12px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 10;
+        /* Section Screen */
+        .farm-section { display: none; flex-direction: column; gap: 10px; }
+        .active-section { display: flex; }
+
+        /* Custom Notification Toast (Screen Inside Alert) */
+        #game-toast {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #fbc02d; color: #fff;
+            padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 300;
         }
+
+        /* Pen / Yard Area */
+        .pen-area {
+            width: 100%; height: 260px; background: #2d5a1e; border: 4px solid #4e342e;
+            border-radius: 16px; position: relative; overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Animals */
+        .animal-container {
+            position: absolute; display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; transition: left 2s ease, top 2s ease;
+        }
+        .animal-img { width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4)); }
+        
+        /* Thought Bubbles */
+        .bubble {
+            background: #ffffff; color: #000; padding: 6px 12px; border-radius: 15px;
+            font-size: 12px; font-weight: bold; border: 2px solid #000; position: absolute;
+            top: -35px; white-space: nowrap; animation: bounce 1s infinite alternate;
+        }
+        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
+
+        /* Navigation Bar */
+        .nav-bar { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-nav {
+            flex: 1; padding: 12px; background: #3e2723; color: #fff; border: 2px solid #8d6e63;
+            border-radius: 10px; font-weight: bold; cursor: pointer; text-align: center;
+        }
+
+        /* Action Buttons */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .act-btn {
-            background: linear-gradient(180deg, #ffcc00, #ff9900); color: #000;
-            border: none; padding: 12px 18px; font-weight: bold; font-size: 14px;
-            border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0 #b37700;
+            padding: 12px; background: linear-gradient(180deg, #ffb300, #ff8f00);
+            border: none; border-radius: 10px; color: #000; font-weight: bold; cursor: pointer;
         }
-        .act-btn:active { transform: translateY(2px); box-shadow: none; }
-        .back-btn { position: absolute; top: 80px; left: 15px; z-index: 10; background: #ff3333; color: white; }
+        .act-btn:active { transform: translateY(2px); }
     </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+    <!-- Notification Overlay (Replacing github.io alerts) -->
+    <div id="game-toast">गेम में आपका स्वागत है!</div>
 
+    <!-- Top UI -->
     <div class="top-bar">
-        <div>💰 Coins: ₹<span id="coins">200</span></div>
-        <div style="font-size: 15px; color: #a3e635;" id="location-name">🏡 Main Farm View</div>
+        <div class="coins">💰 ₹<span id="coins-val">100</span></div>
+        <div style="font-size: 14px; color: #8bc34a;" id="zone-title">Main Home</div>
     </div>
 
-    <button class="act-btn back-btn" id="btn-home" onclick="openMenu()" style="display:none;">🔙 Main Menu</button>
-
-    <div class="menu-overlay" id="main-menu">
-        <div class="menu-title">🚜 3D FARM SIMULATOR</div>
-        <button class="menu-btn" onclick="enterZone('chicken')">🐔 Chicken Farm</button>
-        <button class="menu-btn" onclick="enterZone('cow')">🐄 Cow Farm (Dairy)</button>
-        <button class="menu-btn" onclick="enterZone('crop')">🌾 Crop Agriculture</button>
+    <!-- Main Menu Screen -->
+    <div class="menu-screen" id="main-menu">
+        <div class="menu-title">🌾 REAL FARM MANAGER 🌾</div>
+        <button class="menu-btn" onclick="openZone('hen-farm')">🐔 Hen Farm (मुर्गी फार्म)</button>
+        <button class="menu-btn" onclick="openZone('cow-farm')">🐄 Cow Farm (गाय फार्म)</button>
+        <button class="menu-btn" onclick="openZone('crop-farm')">🚜 Agriculture (खेती)</button>
     </div>
 
-    <div class="control-panel" id="action-panel" style="display:none;">
-        <button class="act-btn" id="btn-1" onclick="handleAction(1)">Feed Grain</button>
-        <button class="act-btn" id="btn-2" onclick="handleAction(2)">Give Water</button>
-        <button class="act-btn" id="btn-3" onclick="handleAction(3)">Collect / Harvest</button>
+    <div class="container">
+
+        <!-- 1. HEN FARM SECTION -->
+        <div class="farm-section" id="hen-farm">
+            <div class="pen-area" id="hen-pen">
+                <div class="animal-container" id="hen-1" style="top: 80px; left: 100px;" onclick="clickAnimal('hen')">
+                    <div class="bubble" id="hen-bubble" style="display: none;">🌾 दाना चाहिए!</div>
+                    <!-- High Quality 2D Hen Image -->
+                    <img src="https://cdn-icons-png.flaticon.com/512/1864/1864593.png" class="animal-img" alt="Hen">
+                </div>
+            </div>
+            <div class="action-grid">
+                <button class="act-btn" onclick="giveFood('hen')">🌾 दाना दें (₹5)</button>
+                <button class="act-btn" onclick="giveWater('hen')">💧 पानी दें (₹2)</button>
+            </div>
+            <div class="nav-bar">
+                <button class="btn-nav" onclick="showMenu()">🏠 मुख्य मेन्यू</button>
+            </div>
+        </div>
+
+        <!-- 2. COW FARM SECTION -->
+        <div class="farm-section" id="cow-farm">
+            <div class="pen-area" id="cow-pen">
+                <div class="animal-container" id="cow-1" style="top: 70px; left: 80px;" onclick="clickAnimal('cow')">
+                    <div class="bubble" id="cow-bubble" style="display: none;">🌿 हरा चारा चाहिए!</div>
+                    <!-- High Quality 2D Cow Image -->
+                    <img src="https://cdn-icons-png.flaticon.com/512/2396/2396837.png" class="animal-img" style="width: 120px; height: 120px;" alt="Cow">
+                </div>
+            </div>
+            <div class="action-grid">
+                <button class="act-btn" onclick="giveFood('cow')">🌿 हरा चारा दें (₹10)</button>
+                <button class="act-btn" onclick="giveWater('cow')">💧 पानी दें (₹5)</button>
+            </div>
+            <div class="nav-bar">
+                <button class="btn-nav" onclick="showMenu()">🏠 मुख्य मेन्यू</button>
+            </div>
+        </div>
+
+        <!-- 3. CROP FARM SECTION -->
+        <div class="farm-section" id="crop-farm">
+            <div class="pen-area" style="background: #5d4037; display: flex; justify-content: center; align-items: center;">
+                <div id="crop-plot" style="text-align: center; cursor: pointer;" onclick="harvestCrop()">
+                    <div class="bubble" id="crop-bubble" style="display: none; position: relative; top: -10px;">🌱 पानी दो!</div>
+                    <img id="crop-img" src="https://cdn-icons-png.flaticon.com/512/616/616634.png" style="width: 100px; height: 100px;" alt="Crop">
+                </div>
+            </div>
+            <div class="action-grid">
+                <button class="act-btn" onclick="plantSeed()">🌱 गेहूँ बोएँ (₹20)</button>
+                <button class="act-btn" onclick="waterCrop()">💧 खेत सींचें (₹5)</button>
+            </div>
+            <div class="nav-bar">
+                <button class="btn-nav" onclick="showMenu()">🏠 मुख्य मेन्यू</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // --- THREE.JS 3D ENGINE SETUP ---
-        let scene, camera, renderer;
-        let chickens = [], cows = [], crops = [];
-        let currentZone = 'home';
-        let coins = 200;
+        let coins = 100;
 
-        // Need/Status Indicators
-        let chickenHungry = true, cowHungry = true, cropWatered = false;
+        // Hen States
+        let henState = { need: 'food', timer: null, ready: false }; // need: 'food', 'water', 'none'
+        // Cow States
+        let cowState = { need: 'food', timer: null, ready: false };
+        // Crop States
+        let cropState = { status: 'empty', watered: false };
 
-        function init3D() {
-            const container = document.getElementById('canvas-container');
-            
-            // Scene & Camera
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb); // Sky blue
-            scene.fog = new THREE.Fog(0x87ceeb, 20, 80);
-
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 15, 25);
-            camera.lookAt(0, 0, 0);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
-
-            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            sunLight.position.set(20, 40, 20);
-            scene.add(sunLight);
-
-            // Ground / Grass Plane
-            const groundGeo = new THREE.PlaneGeometry(100, 100);
-            const groundMat = new THREE.MeshLambertMaterial({ color: 0x3b7a20 });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            scene.add(ground);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
-
-            create3DWorldObjects();
-            animate();
+        // Custom In-Screen Toast Notification
+        function showToast(text) {
+            const toast = document.getElementById("game-toast");
+            toast.textContent = text;
+            toast.style.opacity = "1";
+            setTimeout(() => { toast.style.opacity = "0"; }, 2500);
         }
 
-        // --- CREATING 3D GRAPHICS PROCEDURALLY ---
-        function create3DWorldObjects() {
-            // Create 3D Chickens
-            for(let i=0; i<4; i++) {
-                let chickenGroup = new THREE.Group();
-                // Body
-                let body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8, 8), new THREE.MeshLambertMaterial({color: 0xffffff}));
-                body.position.y = 0.8;
-                chickenGroup.add(body);
-                // Beak
-                let beak = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 4), new THREE.MeshLambertMaterial({color: 0xff9900}));
-                beak.rotation.z = -Math.PI / 2;
-                beak.position.set(0.8, 0.9, 0);
-                chickenGroup.add(beak);
+        function updateCoins() {
+            document.getElementById("coins-val").textContent = coins;
+        }
 
-                chickenGroup.position.set((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15);
-                chickens.push(chickenGroup);
-                scene.add(chickenGroup);
-            }
+        // Navigation
+        function showMenu() {
+            document.getElementById("main-menu").style.display = "flex";
+            document.querySelectorAll(".farm-section").forEach(sec => sec.classList.remove("active-section"));
+            document.getElementById("zone-title").textContent = "Main Home";
+        }
 
-            // Create 3D Cows
-            for(let i=0; i<2; i++) {
-                let cowGroup = new THREE.Group();
-                // Body
-                let body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.8, 1.4), new THREE.MeshLambertMaterial({color: 0xeeeeee}));
-                body.position.y = 1.5;
-                cowGroup.add(body);
-                // Head
-                let head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({color: 0x333333}));
-                head.position.set(1.5, 2, 0);
-                cowGroup.add(head);
+        function openZone(zoneId) {
+            document.getElementById("main-menu").style.display = "none";
+            document.querySelectorAll(".farm-section").forEach(sec => sec.classList.remove("active-section"));
+            document.getElementById(zoneId).classList.add("active-section");
 
-                cowGroup.position.set((Math.random()-0.5)*20, 0, (Math.random()-0.5)*20);
-                cows.push(cowGroup);
-                scene.add(cowGroup);
+            if(zoneId === 'hen-farm') document.getElementById("zone-title").textContent = "Hen Farm";
+            if(zoneId === 'cow-farm') document.getElementById("zone-title").textContent = "Cow Farm";
+            if(zoneId === 'crop-farm') document.getElementById("zone-title").textContent = "Agriculture";
+        }
+
+        // --- AUTOMATIC NEEDS & SYSTEM ---
+        
+        // Hen Logic
+        function updateHenUI() {
+            const bubble = document.getElementById("hen-bubble");
+            if (henState.ready) {
+                bubble.style.display = "block";
+                bubble.style.background = "#fff3cd";
+                bubble.textContent = "🥚 Egg Ready! (क्लिक करो)";
+            } else if (henState.need === 'food') {
+                bubble.style.display = "block";
+                bubble.style.background = "#ffffff";
+                bubble.textContent = "🌾 दाना चाहिए!";
+            } else if (henState.need === 'water') {
+                bubble.style.display = "block";
+                bubble.style.background = "#e3f2fd";
+                bubble.textContent = "💧 पानी चाहिए!";
+            } else {
+                bubble.style.display = "none";
             }
         }
 
-        // Animation Loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Move Chickens Automatically in 3D
-            chickens.forEach((c, idx) => {
-                c.position.x += Math.sin(Date.now() * 0.001 + idx) * 0.03;
-                c.position.z += Math.cos(Date.now() * 0.001 + idx) * 0.03;
-            });
-
-            // Move Cows Slowly
-            cows.forEach((cw, idx) => {
-                cw.position.x += Math.cos(Date.now() * 0.0005 + idx) * 0.01;
-            });
-
-            renderer.render(scene, camera);
-        }
-
-        // --- GAME LOGIC & MENU NAVIGATION ---
-        function openMenu() {
-            document.getElementById('main-menu').style.display = 'flex';
-            document.getElementById('action-panel').style.display = 'none';
-            document.getElementById('btn-home').style.display = 'none';
-            document.getElementById('location-name').textContent = "🏡 Main Farm View";
-            camera.position.set(0, 25, 35);
-            camera.lookAt(0, 0, 0);
-        }
-
-        function enterZone(zone) {
-            currentZone = zone;
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('action-panel').style.display = 'flex';
-            document.getElementById('btn-home').style.display = 'block';
-
-            const b1 = document.getElementById('btn-1');
-            const b2 = document.getElementById('btn-2');
-            const b3 = document.getElementById('btn-3');
-
-            if(zone === 'chicken') {
-                document.getElementById('location-name').textContent = "🐔 Chicken Coop Yard";
-                camera.position.set(0, 8, 12);
-                b1.textContent = "🌾 Give Grain (दाना)";
-                b2.textContent = "💧 Give Water";
-                b3.textContent = "🥚 Collect Eggs";
-            } else if(zone === 'cow') {
-                document.getElementById('location-name').textContent = "🐄 Cow Dairy Barn";
-                camera.position.set(0, 10, 18);
-                b1.textContent = "🌿 Feed Hay (चारा)";
-                b2.textContent = "💧 Give Water";
-                b3.textContent = "🥛 Milk Cow";
-            } else if(zone === 'crop') {
-                document.getElementById('location-name').textContent = "🌾 Crop Agriculture Field";
-                camera.position.set(0, 12, 15);
-                b1.textContent = "🌱 Plant Seeds (₹20)";
-                b2.textContent = "💧 Water Field";
-                b3.textContent = "✂️ Harvest & Sell";
+        function giveFood(type) {
+            if (type === 'hen') {
+                if (henState.need === 'food') {
+                    if (coins >= 5) {
+                        coins -= 5;
+                        henState.need = 'water';
+                        showToast("मुर्गी ने दाना खा लिया! अब पानी माँग रही है।");
+                        updateCoins();
+                        updateHenUI();
+                    } else showToast("पैसे कम हैं!");
+                } else showToast("अभी दाना नहीं चाहिए!");
+            } else if (type === 'cow') {
+                if (cowState.need === 'food') {
+                    if (coins >= 10) {
+                        coins -= 10;
+                        cowState.need = 'water';
+                        showToast("गाय ने चारा खा लिया! अब पानी माँग रही है।");
+                        updateCoins();
+                        updateCowUI();
+                    } else showToast("पैसे कम हैं!");
+                } else showToast("अभी चारा नहीं चाहिए!");
             }
         }
 
-        function handleAction(actNum) {
-            if(currentZone === 'chicken') {
-                if(actNum === 1 || actNum === 2) {
-                    alert("मुर्गियों को दाना/पानी दे दिया गया है! वे अब 3D में अंडे देने के लिए तैयार हैं।");
-                    chickenHungry = false;
-                } else {
-                    if(!chickenHungry) {
-                        coins += 50;
-                        alert("ताज़े अंडे मिले! ₹50 खाते में जुड़ गए।");
-                        chickenHungry = true;
-                    } else {
-                        alert("मुर्गी भूखी है! पहले दाना और पानी दें।");
-                    }
+        function giveWater(type) {
+            if (type === 'hen') {
+                if (henState.need === 'water') {
+                    if (coins >= 2) {
+                        coins -= 2;
+                        henState.need = 'none';
+                        showToast("मुर्गी का पेट भर गया! 15 सेकंड में अंडा देगी...");
+                        updateCoins();
+                        updateHenUI();
+
+                        // Timer for Egg
+                        setTimeout(() => {
+                            henState.ready = true;
+                            updateHenUI();
+                        }, 15000); // Demo timer 15 sec (इसे 120000 करके 2 मिनट कर सकते हैं)
+                    } else showToast("पैसे कम हैं!");
+                } else showToast("अभी पानी नहीं चाहिए!");
+            } else if (type === 'cow') {
+                if (cowState.need === 'water') {
+                    if (coins >= 5) {
+                        coins -= 5;
+                        cowState.need = 'none';
+                        showToast("गाय ने पानी पी लिया! 20 सेकंड में दूध तैयार होगा...");
+                        updateCoins();
+                        updateCowUI();
+
+                        setTimeout(() => {
+                            cowState.ready = true;
+                            updateCowUI();
+                        }, 20000);
+                    } else showToast("पैसे कम हैं!");
+                } else showToast("अभी पानी नहीं चाहिए!");
+            }
+        }
+
+        function clickAnimal(type) {
+            if (type === 'hen') {
+                if (henState.ready) {
+                    coins += 40;
+                    henState.ready = false;
+                    henState.need = 'food'; // फिर से दाना माँगेगी
+                    showToast("🥚 अंडा मिल गया! ₹40 खाते में जुड़े।");
+                    updateCoins();
+                    updateHenUI();
                 }
-            } else if(currentZone === 'cow') {
-                if(actNum === 1 || actNum === 2) {
-                    alert("गाय को हरा चारा और पानी खिला दिया गया है।");
-                    cowHungry = false;
-                } else {
-                    if(!cowHungry) {
-                        coins += 120;
-                        alert("बाल्टी भरकर दूध निकाला गया! ₹120 कमा लिए।");
-                        cowHungry = true;
-                    } else {
-                        alert("गाय चारा मांग रही है! पहले चारा और पानी दें।");
-                    }
-                }
-            } else if(currentZone === 'crop') {
-                if(actNum === 1) {
-                    if(coins >= 20) { coins -= 20; alert("बीज बो दिए गए हैं!"); }
-                } else if(actNum === 2) {
-                    cropWatered = true;
-                    alert("खेत में पानी दे दिया गया है! फसल तैयार हो रही है।");
-                } else {
-                    if(cropWatered) {
-                        coins += 150;
-                        alert("फसल काटकर बाज़ार में बेची गई! ₹150 मिले।");
-                        cropWatered = false;
-                    } else {
-                        alert("फसल अभी सूखी है! पहले पानी दें।");
-                    }
+            } else if (type === 'cow') {
+                if (cowState.ready) {
+                    coins += 90;
+                    cowState.ready = false;
+                    cowState.need = 'food';
+                    showToast("🥛 दूध मिल गया! ₹90 खाते में जुड़े।");
+                    updateCoins();
+                    updateCowUI();
                 }
             }
-            document.getElementById('coins').textContent = coins;
         }
 
-        window.onload = () => {
-            init3D();
-        };
+        // Cow UI Update
+        function updateCowUI() {
+            const bubble = document.getElementById("cow-bubble");
+            if (cowState.ready) {
+                bubble.style.display = "block";
+                bubble.style.background = "#fff3cd";
+                bubble.textContent = "🥛 Milk Ready! (क्लिक करो)";
+            } else if (cowState.need === 'food') {
+                bubble.style.display = "block";
+                bubble.style.background = "#ffffff";
+                bubble.textContent = "🌿 हरा चारा चाहिए!";
+            } else if (cowState.need === 'water') {
+                bubble.style.display = "block";
+                bubble.style.background = "#e3f2fd";
+                bubble.textContent = "💧 पानी चाहिए!";
+            } else {
+                bubble.style.display = "none";
+            }
+        }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // Crop System
+        function plantSeed() {
+            if(cropState.status === 'empty') {
+                if(coins >= 20) {
+                    coins -= 20;
+                    cropState.status = 'planted';
+                    document.getElementById("crop-bubble").style.display = "block";
+                    document.getElementById("crop-bubble").textContent = "💧 पानी दो!";
+                    showToast("बीज बो दिया गया है! अब पानी दें।");
+                    updateCoins();
+                } else showToast("पैसे कम हैं!");
+            } else showToast("फसल पहले से बोई गई है!");
+        }
+
+        function waterCrop() {
+            if(cropState.status === 'planted' && !cropState.watered) {
+                if(coins >= 5) {
+                    coins -= 5;
+                    cropState.watered = true;
+                    showToast("पानी दे दिया! फसल पक रही है...");
+                    updateCoins();
+
+                    setTimeout(() => {
+                        cropState.status = 'ready';
+                        document.getElementById("crop-bubble").textContent = "🌾 काटें (Harvest)!";
+                    }, 10000);
+                }
+            }
+        }
+
+        function harvestCrop() {
+            if(cropState.status === 'ready') {
+                coins += 100;
+                cropState.status = 'empty';
+                cropState.watered = false;
+                document.getElementById("crop-bubble").style.display = "none";
+                showToast("🌾 फसल कट गई! ₹100 मिले।");
+                updateCoins();
+            }
+        }
+
+        // Animal Random Movement
+        setInterval(() => {
+            const hen = document.getElementById("hen-1");
+            const cow = document.getElementById("cow-1");
+            hen.style.left = Math.floor(Math.random() * 200 + 20) + "px";
+            hen.style.top = Math.floor(Math.random() * 120 + 40) + "px";
+
+            cow.style.left = Math.floor(Math.random() * 180 + 20) + "px";
+            cow.style.top = Math.floor(Math.random() * 100 + 40) + "px";
+        }, 4000);
+
+        updateHenUI();
+        updateCowUI();
     </script>
 </body>
 </html>
