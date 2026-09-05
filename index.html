@@ -3,351 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cartoon Farm Tycoon</title>
+    <title>Pure Canvas 2D Farm</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; }
-        html, body { width: 100vw; height: 100vh; overflow: hidden; background: #2e7d32; color: #fff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: sans-serif; }
+        html, body { width: 100vw; height: 100vh; overflow: hidden; background: #1b5e20; color: #fff; }
 
-        .app-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; position: relative; }
-
-        /* Top HUD */
         .top-bar {
             position: absolute; top: 0; left: 0; right: 0; height: 50px;
-            background: rgba(0, 0, 0, 0.6); border-bottom: 3px solid #ffca28;
+            background: rgba(0, 0, 0, 0.8); border-bottom: 3px solid #fbc02d;
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 15px; z-index: 100;
         }
-        .coins { font-size: 20px; font-weight: bold; color: #ffca28; text-shadow: 1px 1px 2px #000; }
-        .zone-title { font-size: 16px; font-weight: bold; color: #aed581; }
+        .coins { font-size: 20px; font-weight: bold; color: #fbc02d; }
+        .title { font-size: 16px; font-weight: bold; color: #8bc34a; }
 
-        /* Main Menu Screen */
-        .menu-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                        url('https://img.freepik.com/free-vector/farm-scene-with-red-barn-field_1308-55271.jpg') center/cover;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; z-index: 200;
-        }
-        .menu-title { font-size: 30px; font-weight: bold; color: #ffca28; text-shadow: 2px 2px 4px #000; text-align: center; }
-        .menu-btn {
-            width: 80%; max-width: 300px; padding: 15px; font-size: 18px; font-weight: bold;
-            background: #7cb342; color: white; border: 3px solid #fff;
-            border-radius: 15px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .menu-btn:active { transform: scale(0.95); }
-
-        /* Farm Sections */
-        .farm-section { width: 100%; height: 100%; display: none; flex-direction: column; position: relative; }
-        .active-section { display: flex; }
-
-        /* Cartoon Backgrounds */
-        #hen-farm {
-            background: url('https://img.freepik.com/free-vector/poultry-farm-concept-illustration_1284-58721.jpg') center/cover no-repeat;
-        }
-        #cow-farm {
-            background: url('https://img.freepik.com/free-vector/farm-landscape-with-cows-grass_1308-58823.jpg') center/cover no-repeat;
+        #gameCanvas {
+            width: 100vw; height: 100vh; display: block; background: #388e3c;
         }
 
-        /* Interactive Yard Area */
-        .play-area { flex: 1; width: 100%; position: relative; margin-top: 50px; margin-bottom: 110px; }
-
-        /* Animal Wrap & Thought Bubbles */
-        .animal-wrap {
-            position: absolute; display: flex; flex-direction: column; align-items: center;
-            cursor: pointer; transition: left 2s ease, top 2s ease;
-        }
-        .cartoon-img { filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3)); }
-        .hen-img { width: 85px; height: 85px; }
-        .cow-img { width: 120px; height: 120px; }
-
-        .thought-bubble {
-            background: #ffffff; color: #000; padding: 5px 10px; border-radius: 15px;
-            font-size: 12px; font-weight: bold; border: 2px solid #333;
-            position: absolute; top: -30px; white-space: nowrap; box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-            animation: bounce 0.6s infinite alternate; z-index: 10;
-        }
-        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-5px); } }
-
-        /* Bottom Control Panel */
-        .bottom-controls {
+        .controls {
             position: absolute; bottom: 0; left: 0; right: 0;
-            background: rgba(0, 0, 0, 0.8); border-top: 3px solid #ffca28;
+            background: rgba(0, 0, 0, 0.85); border-top: 3px solid #fbc02d;
             padding: 10px; display: flex; flex-direction: column; gap: 8px; z-index: 100;
         }
-        .action-row { display: flex; gap: 6px; width: 100%; }
-        .act-btn {
-            flex: 1; padding: 12px 5px; font-size: 12px; font-weight: bold; border-radius: 10px; border: none;
-            background: #ffb300; color: #000; cursor: pointer; box-shadow: 0 3px 0 #c78100;
+        .row { display: flex; gap: 8px; }
+        .btn {
+            flex: 1; padding: 12px 5px; font-size: 13px; font-weight: bold; border-radius: 8px; border: none;
+            background: #ffa000; color: #000; cursor: pointer;
         }
-        .act-btn:active { transform: translateY(2px); box-shadow: none; }
-        .btn-buy { background: #7cb342; color: #fff; box-shadow: 0 3px 0 #4b830d; }
-        .btn-home { background: #e53935; color: #fff; box-shadow: 0 3px 0 #ab000d; }
+        .btn-buy { background: #4caf50; color: #fff; }
+        .btn-switch { background: #0288d1; color: #fff; }
 
-        /* Toast Message */
-        #game-toast {
+        #toast {
             position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); border: 2px solid #ffca28; color: #fff;
-            padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold;
-            pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 300; text-align: center;
+            background: #000; border: 2px solid #fbc02d; color: #fff; padding: 8px 16px;
+            border-radius: 20px; font-size: 13px; font-weight: bold; opacity: 0;
+            transition: opacity 0.3s; z-index: 200; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        
-        <div id="game-toast">फार्म में आपका स्वागत है!</div>
+    <div id="toast">गेम शुरू हो गया है!</div>
 
-        <!-- Top Status Bar -->
-        <div class="top-bar">
-            <div class="coins">💰 ₹<span id="coins-val">150</span></div>
-            <div class="zone-title" id="zone-title">Main Village</div>
+    <div class="top-bar">
+        <div class="coins">💰 ₹<span id="coin-txt">150</span></div>
+        <div class="title" id="mode-txt">Poultry Farm</div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="controls">
+        <div class="row">
+            <button class="btn" onclick="feedCurrent()">🌾 दाना/चारा दें</button>
+            <button class="btn" onclick="waterCurrent()">💧 पानी दें</button>
+            <button class="btn btn-buy" onclick="buyCurrent()" id="buy-btn">➕ Buy Hen (₹100)</button>
         </div>
-
-        <!-- Main Menu -->
-        <div class="menu-screen" id="main-menu">
-            <div class="menu-title">🏡 CARTOON FARM</div>
-            <button class="menu-btn" onclick="openZone('hen-farm')">🐔 Hen Farm (मुर्गी फार्म)</button>
-            <button class="menu-btn" onclick="openZone('cow-farm')">🐄 Cow Farm (गाय फार्म)</button>
+        <div class="row">
+            <button class="btn btn-switch" onclick="toggleMode()">🔄 स्विच करें (Cow / Hen Farm)</button>
         </div>
-
-        <!-- 1. HEN FARM -->
-        <div class="farm-section" id="hen-farm">
-            <div class="play-area" id="hen-area"></div>
-            <div class="bottom-controls">
-                <div class="action-row">
-                    <button class="act-btn" onclick="feedHens()">🌾 दाना दें (₹5)</button>
-                    <button class="act-btn" onclick="waterHens()">💧 पानी दें (₹2)</button>
-                    <button class="act-btn btn-buy" onclick="buyHen()">➕ Buy Hen (₹100)</button>
-                </div>
-                <div class="action-row">
-                    <button class="act-btn btn-home" onclick="showMenu()">🏠 मुख्य मेन्यू</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. COW FARM -->
-        <div class="farm-section" id="cow-farm">
-            <div class="play-area" id="cow-area"></div>
-            <div class="bottom-controls">
-                <div class="action-row">
-                    <button class="act-btn" onclick="feedCows()">🌿 चारा दें (₹10)</button>
-                    <button class="act-btn" onclick="waterCows()">💧 पानी दें (₹5)</button>
-                    <button class="act-btn btn-buy" onclick="buyCow()">➕ Buy Cow (₹200)</button>
-                </div>
-                <div class="action-row">
-                    <button class="act-btn btn-home" onclick="showMenu()">🏠 मुख्य मेन्यू</button>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
         let coins = 150;
+        let mode = 'hen'; // 'hen' or 'cow'
 
-        let hens = [{ id: 1, need: 'food', ready: false }];
-        let cows = [{ id: 1, need: 'food', ready: false }];
-
-        // Reliable Vector/Cartoon SVG Data Links (No broken images)
-        const HEN_SVG = "https://cdn-icons-png.flaticon.com/512/1864/1864593.png";
-        const COW_SVG = "https://cdn-icons-png.flaticon.com/512/2396/2396837.png";
+        let hens = [{ x: 100, y: 200, need: 'food', ready: false }];
+        let cows = [{ x: 100, y: 220, need: 'food', ready: false }];
 
         function showToast(msg) {
-            const toast = document.getElementById("game-toast");
-            toast.textContent = msg;
-            toast.style.opacity = "1";
-            setTimeout(() => { toast.style.opacity = "0"; }, 2000);
+            const t = document.getElementById("toast");
+            t.textContent = msg; t.style.opacity = "1";
+            setTimeout(() => { t.style.opacity = "0"; }, 2000);
         }
 
-        function updateCoins() {
-            document.getElementById("coins-val").textContent = coins;
+        function updateUI() {
+            document.getElementById("coin-txt").textContent = coins;
+            if(mode === 'hen') {
+                document.getElementById("mode-txt").textContent = "Poultry Yard (मुर्गी फार्म)";
+                document.getElementById("buy-btn").textContent = "➕ Buy Hen (₹100)";
+            } else {
+                document.getElementById("mode-txt").textContent = "Cattle Shed (गाय फार्म)";
+                document.getElementById("buy-btn").textContent = "➕ Buy Cow (₹200)";
+            }
         }
 
-        function showMenu() {
-            document.getElementById("main-menu").style.display = "flex";
-            document.querySelectorAll(".farm-section").forEach(s => s.classList.remove("active-section"));
-            document.getElementById("zone-title").textContent = "Main Village";
+        function toggleMode() {
+            mode = (mode === 'hen') ? 'cow' : 'hen';
+            updateUI();
         }
 
-        function openZone(zoneId) {
-            document.getElementById("main-menu").style.display = "none";
-            document.querySelectorAll(".farm-section").forEach(s => s.classList.remove("active-section"));
-            document.getElementById(zoneId).classList.add("active-section");
+        // --- CANVAS DRAWING (Zero External Links) ---
+        function drawBackground() {
+            // Grass
+            ctx.fillStyle = mode === 'hen' ? "#4caf50" : "#388e3c";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if(zoneId === 'hen-farm') document.getElementById("zone-title").textContent = "Poultry Yard";
-            if(zoneId === 'cow-farm') document.getElementById("zone-title").textContent = "Cattle Shed";
+            // Red Barn House
+            ctx.fillStyle = "#b71c1c";
+            ctx.fillRect(canvas.width - 150, 70, 120, 100);
+            ctx.fillStyle = "#d32f2f";
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - 160, 70);
+            ctx.lineTo(canvas.width - 90, 20);
+            ctx.lineTo(canvas.width - 20, 70);
+            ctx.fill();
+
+            // Door
+            ctx.fillStyle = "#5d4037";
+            ctx.fillRect(canvas.width - 110, 110, 40, 60);
         }
 
-        // Hen Controls
-        function renderHens() {
-            const container = document.getElementById("hen-area");
-            container.innerHTML = "";
+        function drawHen(h) {
+            ctx.save();
+            ctx.translate(h.x, h.y);
 
-            hens.forEach((h, index) => {
-                const wrap = document.createElement("div");
-                wrap.className = "animal-wrap";
-                wrap.id = `hen-wrap-${h.id}`;
-                wrap.style.top = (80 + (index * 35) % 150) + "px";
-                wrap.style.left = (50 + (index * 60) % 200) + "px";
+            // Hen Body
+            ctx.fillStyle = "#ffb74d";
+            ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.fill();
+            // Head
+            ctx.fillStyle = "#ffa726";
+            ctx.beginPath(); ctx.arc(12, -12, 12, 0, Math.PI * 2); ctx.fill();
+            // Comb
+            ctx.fillStyle = "#e53935";
+            ctx.beginPath(); ctx.arc(12, -24, 5, 0, Math.PI * 2); ctx.fill();
+            // Beak
+            ctx.fillStyle = "#f57c00";
+            ctx.beginPath(); ctx.moveTo(22, -12); ctx.lineTo(30, -8); ctx.lineTo(22, -4); ctx.fill();
 
-                let bubbleTxt = "";
-                let show = true;
+            // Bubble
+            drawBubble(h);
+            ctx.restore();
+        }
 
-                if (h.ready) bubbleTxt = "🥚 Egg Ready!";
-                else if (h.need === 'food') bubbleTxt = "🌾 दाना दो!";
-                else if (h.need === 'water') bubbleTxt = "💧 पानी दो!";
-                else show = false;
+        function drawCow(c) {
+            ctx.save();
+            ctx.translate(c.x, c.y);
 
-                wrap.innerHTML = `
-                    ${show ? `<div class="thought-bubble">${bubbleTxt}</div>` : ''}
-                    <img src="${HEN_SVG}" class="cartoon-img hen-img" onclick="collectEgg(${h.id})" alt="Cartoon Hen">
-                `;
-                container.appendChild(wrap);
+            // Body
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.ellipse(0, 0, 40, 28, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.stroke();
+
+            // Spots
+            ctx.fillStyle = "#000000";
+            ctx.beginPath(); ctx.arc(-10, -5, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(15, 8, 8, 0, Math.PI * 2); ctx.fill();
+
+            // Head
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.arc(35, -15, 18, 0, Math.PI * 2); ctx.fill();
+            ctx.stroke();
+
+            // Snout
+            ctx.fillStyle = "#ffab91";
+            ctx.beginPath(); ctx.arc(42, -10, 10, 0, Math.PI * 2); ctx.fill();
+
+            // Bubble
+            drawBubble(c);
+            ctx.restore();
+        }
+
+        function drawBubble(item) {
+            let txt = "";
+            if(item.ready) txt = mode === 'hen' ? "🥚 Egg Ready!" : "🥛 Milk Ready!";
+            else if(item.need === 'food') txt = mode === 'hen' ? "🌾 दाना दो!" : "🌿 चारा दो!";
+            else if(item.need === 'water') txt = "💧 पानी दो!";
+
+            if(txt) {
+                ctx.fillStyle = item.ready ? "#fff59d" : "#ffffff";
+                ctx.fillRect(-30, -55, 80, 24);
+                ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.strokeRect(-30, -55, 80, 24);
+                ctx.fillStyle = "#000"; ctx.font = "bold 11px sans-serif";
+                ctx.fillText(txt, -25, -38);
+            }
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+
+            if(mode === 'hen') hens.forEach(drawHen);
+            else cows.forEach(drawCow);
+
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        // --- CONTROLS ---
+        function feedCurrent() {
+            let list = mode === 'hen' ? hens : cows;
+            let cost = mode === 'hen' ? 5 : 10;
+            let fed = false;
+
+            list.forEach(item => {
+                if(item.need === 'food' && coins >= cost) {
+                    coins -= cost; item.need = 'water'; fed = true;
+                }
             });
+            if(fed) { updateUI(); showToast("खाना खिलाया! अब पानी दें।"); }
         }
 
-        function buyHen() {
-            if (coins >= 100) {
+        function waterCurrent() {
+            let list = mode === 'hen' ? hens : cows;
+            let cost = mode === 'hen' ? 2 : 5;
+            let watered = false;
+
+            list.forEach(item => {
+                if(item.need === 'water' && coins >= cost) {
+                    coins -= cost; item.need = 'none'; watered = true;
+                    setTimeout(() => { item.ready = true; }, 8000);
+                }
+            });
+            if(watered) { updateUI(); showToast("पानी पिलाया! माल तैयार हो रहा है..."); }
+        }
+
+        function buyCurrent() {
+            if(mode === 'hen' && coins >= 100) {
                 coins -= 100;
-                hens.push({ id: Date.now(), need: 'food', ready: false });
-                updateCoins();
-                renderHens();
-                showToast("एक नई मुर्गी आ गई!");
-            } else showToast("पैसे कम हैं (₹100 चाहिए)!");
-        }
-
-        function feedHens() {
-            let done = false;
-            hens.forEach(h => {
-                if (h.need === 'food' && coins >= 5) {
-                    coins -= 5;
-                    h.need = 'water';
-                    done = true;
-                }
-            });
-            if (done) { updateCoins(); renderHens(); showToast("मुर्गी ने दाना खा लिया, अब पानी चाहिए!"); }
-        }
-
-        function waterHens() {
-            let done = false;
-            hens.forEach(h => {
-                if (h.need === 'water' && coins >= 2) {
-                    coins -= 2;
-                    h.need = 'none';
-                    done = true;
-                    setTimeout(() => { h.ready = true; renderHens(); }, 10000);
-                }
-            });
-            if (done) { updateCoins(); renderHens(); showToast("पानी दे दिया! अंडा तैयार हो रहा है..."); }
-        }
-
-        function collectEgg(id) {
-            const h = hens.find(x => x.id === id);
-            if (h && h.ready) {
-                coins += 40;
-                h.ready = false;
-                h.need = 'food';
-                updateCoins();
-                renderHens();
-                showToast("🥚 अंडा मिल गया! +₹40");
-            }
-        }
-
-        // Cow Controls
-        function renderCows() {
-            const container = document.getElementById("cow-area");
-            container.innerHTML = "";
-
-            cows.forEach((c, index) => {
-                const wrap = document.createElement("div");
-                wrap.className = "animal-wrap";
-                wrap.id = `cow-wrap-${c.id}`;
-                wrap.style.top = (70 + (index * 50) % 140) + "px";
-                wrap.style.left = (40 + (index * 70) % 180) + "px";
-
-                let bubbleTxt = "";
-                let show = true;
-
-                if (c.ready) bubbleTxt = "🥛 Milk Ready!";
-                else if (c.need === 'food') bubbleTxt = "🌿 चारा दो!";
-                else if (c.need === 'water') bubbleTxt = "💧 पानी दो!";
-                else show = false;
-
-                wrap.innerHTML = `
-                    ${show ? `<div class="thought-bubble">${bubbleTxt}</div>` : ''}
-                    <img src="${COW_SVG}" class="cartoon-img cow-img" onclick="collectMilk(${c.id})" alt="Cartoon Cow">
-                `;
-                container.appendChild(wrap);
-            });
-        }
-
-        function buyCow() {
-            if (coins >= 200) {
+                hens.push({ x: Math.random()*(canvas.width-120)+40, y: Math.random()*(canvas.height-300)+150, need: 'food', ready: false });
+                showToast("नई मुर्गी ख़रीदी!");
+            } else if(mode === 'cow' && coins >= 200) {
                 coins -= 200;
-                cows.push({ id: Date.now(), need: 'food', ready: false });
-                updateCoins();
-                renderCows();
-                showToast("एक नई गाय ख़रीद ली!");
-            } else showToast("पैसे कम हैं (₹200 चाहिए)!");
+                cows.push({ x: Math.random()*(canvas.width-140)+40, y: Math.random()*(canvas.height-300)+150, need: 'food', ready: false });
+                showToast("नई गाय ख़रीदी!");
+            } else showToast("पैसे कम हैं!");
+            updateUI();
         }
 
-        function feedCows() {
-            let done = false;
-            cows.forEach(c => {
-                if (c.need === 'food' && coins >= 10) {
-                    coins -= 10;
-                    c.need = 'water';
-                    done = true;
+        // Click to Collect
+        canvas.addEventListener("click", (e) => {
+            let list = mode === 'hen' ? hens : cows;
+            list.forEach(item => {
+                if(item.ready && Math.hypot(e.clientX - item.x, e.clientY - item.y) < 40) {
+                    coins += mode === 'hen' ? 40 : 90;
+                    item.ready = false; item.need = 'food';
+                    showToast(mode === 'hen' ? "🥚 अंडा इकट्ठा किया! +₹40" : "🥛 दूध इकट्ठा किया! +₹90");
+                    updateUI();
                 }
             });
-            if (done) { updateCoins(); renderCows(); showToast("गाय ने चारा खा लिया, अब पानी माँग रही है!"); }
-        }
+        });
 
-        function waterCows() {
-            let done = false;
-            cows.forEach(c => {
-                if (c.need === 'water' && coins >= 5) {
-                    coins -= 5;
-                    c.need = 'none';
-                    done = true;
-                    setTimeout(() => { c.ready = true; renderCows(); }, 15000);
-                }
-            });
-            if (done) { updateCoins(); renderCows(); showToast("पानी दे दिया! दूध तैयार हो रहा है..."); }
-        }
-
-        function collectMilk(id) {
-            const c = cows.find(x => x.id === id);
-            if (c && c.ready) {
-                coins += 90;
-                c.ready = false;
-                c.need = 'food';
-                updateCoins();
-                renderCows();
-                showToast("🥛 दूध मिल गया! +₹90");
-            }
-        }
-
-        // Movements
+        // Auto Random Movement
         setInterval(() => {
-            hens.forEach(h => {
-                const el = document.getElementById(`hen-wrap-${h.id}`);
-                if (el) {
-                    el.style.left = Math.floor(Math.random() * 200 + 30) + "px";
-                    el.style.top = Math.floor(Math.random() * 140 + 50) + "px";
-                }
-            });
-            cows.forEach(c => {
-                const el = document.getElementById(`cow-wrap-${c.id}`);
-                if (el) {
-                    el.style.left = Math.floor(Math.random() * 170 + 30) + "px";
-                    el.style.top = Math.floor(Math.random() * 120 + 50) + "px";
-                }
-            });
-        }, 3000);
+            hens.forEach(h => { h.x += Math.random()*20 - 10; h.y += Math.random()*20 - 10; });
+            cows.forEach(c => { c.x += Math.random()*20 - 10; c.y += Math.random()*20 - 10; });
+        }, 2000);
 
-        renderHens();
-        renderCows();
+        updateUI();
     </script>
 </body>
 </html>
