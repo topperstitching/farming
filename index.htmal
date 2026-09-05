@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Seed & Farm Tycoon</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #122411;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-bottom: 25px;
+        }
+
+        /* Top Bar */
+        .header {
+            width: 100%;
+            background: #091408;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #ffcc00;
+        }
+        .money-display {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+
+        /* Main Container */
+        .main-container {
+            width: 95%;
+            max-width: 480px;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Card Section */
+        .card {
+            background: linear-gradient(135deg, #1e3e1b, #132a11);
+            border-radius: 16px;
+            padding: 14px;
+            border: 2px solid #2e5c2a;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .seed-card {
+            background: linear-gradient(135deg, #2c3e1e, #1a2911);
+            border: 2px solid #8bc34a;
+        }
+
+        .shop-card {
+            background: linear-gradient(135deg, #4a3b2c, #2b2015);
+            border: 2px solid #d4a359;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+        .title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+
+        /* Moving Animals Field */
+        .animal-playground {
+            width: 100%;
+            height: 95px;
+            background: #0d1a0c;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #2e5c2a;
+        }
+
+        .moving-animal {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            transition: transform 0.15s ease, top 1.5s ease, left 1.5s ease;
+        }
+        .moving-animal:active {
+            transform: scale(0.85);
+        }
+
+        .pop-text {
+            position: absolute;
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 16px;
+            animation: floatUp 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background: #091408;
+            border-radius: 8px;
+            height: 12px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #8bc34a, #4caf50);
+            transition: width 0.3s;
+        }
+
+        /* Buttons Grid */
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: linear-gradient(180deg, #ffcc00, #e6b800);
+            color: #000;
+            border: none;
+            padding: 7px 10px;
+            font-weight: bold;
+            font-size: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #b38f00;
+        }
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+        .btn-water { background: linear-gradient(180deg, #2196F3, #1976D2); color: #fff; box-shadow: 0 2px 0 #0d47a1; }
+        .btn-fertilizer { background: linear-gradient(180deg, #795548, #5D4037); color: #fff; box-shadow: 0 2px 0 #3e2723; }
+        .btn-sell { background: linear-gradient(180deg, #4CAF50, #2E7D32); color: #fff; box-shadow: 0 2px 0 #1b5e20; }
+        .btn:disabled { background: #444 !important; color: #888 !important; box-shadow: none !important; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <!-- TOP SCOREBAR -->
+    <div class="header">
+        <div class="money-display">💰 Coins: <span id="money">100</span></div>
+        <div style="font-size: 13px; color: #a3e635;">🌾 Master Farm</div>
+    </div>
+
+    <div class="main-container">
+
+        <!-- 1. SEED MARKET (बीज की दुकान) -->
+        <div class="card seed-card">
+            <div class="card-header">
+                <div class="title" style="color: #a3e635;">🌱 Seed Market (बीज ख़रीदें)</div>
+            </div>
+            <div style="font-size: 12px; color: #ccc;">
+                📦 Inventory Seeds: 🌾Wheat: <span id="inv-wheat-seed">0</span> | 🌽Corn: <span id="inv-corn-seed">0</span> | 🌾Rice: <span id="inv-rice-seed">0</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn" onclick="buySeed('wheat', 10)">🌾 Wheat Seed (₹10)</button>
+                <button class="btn" onclick="buySeed('corn', 25)">🌽 Corn Seed (₹25)</button>
+                <button class="btn" onclick="buySeed('rice', 50)">🌾 Rice Seed (₹50)</button>
+            </div>
+        </div>
+
+        <!-- 2. CROP FIELD (खेती और बुआई) -->
+        <div class="card">
+            <div class="card-header">
+                <div class="title">🚜 Field (फसल उगाएं)</div>
+                <div style="font-size: 12px; color: #ffcc00;">Planted: <span id="current-planted">None</span></div>
+            </div>
+
+            <div>
+                <div style="font-size: 12px; margin-bottom: 2px;">Growth: <span id="crop-status">Empty Field</span></div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="crop-bar"></div>
+                </div>
+            </div>
+
+            <!-- Plant Selection Buttons -->
+            <div style="font-size: 11px; color: #aaa;">Plant Seed from Inventory:</div>
+            <div class="btn-group">
+                <button class="btn" onclick="plantSeed('wheat')">Plant Wheat</button>
+                <button class="btn" onclick="plantSeed('corn')">Plant Corn</button>
+                <button class="btn" onclick="plantSeed('rice')">Plant Rice</button>
+            </div>
+
+            <!-- Nurture Buttons -->
+            <div class="btn-group" style="margin-top: 5px;">
+                <button class="btn btn-water" onclick="addWater()">💧 Add Water</button>
+                <button class="btn btn-fertilizer" onclick="addFertilizer()">🟤 Add Fertilizer</button>
+                <button class="btn" id="btn-harvest" onclick="harvestCrop()" disabled>✂️ Harvest</button>
+            </div>
+        </div>
+
+        <!-- 3. ANIMALS (मुर्गी और गाय) -->
+        <div class="card">
+            <div class="card-header">
+                <div class="title">🐔 Chicken Yard (टच करें)</div>
+                <div style="font-size: 12px; color: #aaa;">Stock: 🥚 <span id="stock-egg">0</span></div>
+            </div>
+            <div class="animal-playground" id="chicken-yard">
+                <div class="moving-animal" id="chicken-target" onclick="catchChicken(event)">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="55" r="28" fill="#ffffff"/>
+                        <circle cx="65" cy="35" r="16" fill="#ffffff"/>
+                        <polygon points="78,35 90,38 78,43" fill="#ff9900"/>
+                        <path d="M 60,20 Q 65,10 70,20" stroke="#ff3333" stroke-width="4" fill="none"/>
+                        <circle cx="68" cy="32" r="3" fill="#000"/>
+                        <ellipse cx="25" cy="72" rx="8" ry="10" fill="#f5e6cc"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="title">🐄 Cow Yard (टच करें)</div>
+                <div style="font-size: 12px; color: #aaa;">Stock: 🥛 <span id="stock-milk">0</span></div>
+            </div>
+            <div class="animal-playground" id="cow-yard">
+                <div class="moving-animal" id="cow-target" onclick="milkCow(event)" style="width:65px; height:65px;">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="30" ry="22" fill="#fff"/>
+                        <ellipse cx="30" cy="48" rx="10" ry="14" fill="#333"/>
+                        <circle cx="75" cy="40" r="14" fill="#fff"/>
+                        <rect x="15" y="65" width="14" height="16" fill="#aaa" rx="2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SHOP / MARKET (बिक्री केन्द्र) -->
+        <div class="card shop-card">
+            <div class="card-header">
+                <div class="title" style="color: #ffd89b;">🏪 Sell Harvested Goods</div>
+                <div style="font-size: 11px; color: #aaa;">Stock: 🌾<span id="stock-wheat">0</span> | 🌽<span id="stock-corn">0</span> | 🌾<span id="stock-rice">0</span></div>
+            </div>
+            <div style="font-size: 11px; color: #ddd;">
+                Rates: 🥚Egg: ₹8 | 🥛Milk: ₹25 | 🌾Wheat: ₹30 | 🌽Corn: ₹75 | 🌾Rice: ₹180
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-sell" onclick="sellItem('egg')">Sell Eggs</button>
+                <button class="btn btn-sell" onclick="sellItem('milk')">Sell Milk</button>
+                <button class="btn btn-sell" onclick="sellItem('wheat')">Sell Wheat</button>
+                <button class="btn btn-sell" onclick="sellItem('corn')">Sell Corn</button>
+                <button class="btn btn-sell" onclick="sellItem('rice')">Sell Rice</button>
+                <button class="btn btn-sell" style="background: linear-gradient(180deg, #ff5722, #e64a19);" onclick="sellAll()">Sell ALL</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let money = 100;
+
+        // Seeds Inventory
+        let seeds = { wheat: 0, corn: 0, rice: 0 };
+
+        // Harvested Crops & Animals Stock
+        let stocks = { egg: 0, milk: 0, wheat: 0, corn: 0, rice: 0 };
+
+        // Field State
+        let currentCrop = null; // 'wheat', 'corn', 'rice'
+        let growthProgress = 0;
+
+        function updateUI() {
+            document.getElementById("money").textContent = Math.floor(money);
+
+            // Seeds Display
+            document.getElementById("inv-wheat-seed").textContent = seeds.wheat;
+            document.getElementById("inv-corn-seed").textContent = seeds.corn;
+            document.getElementById("inv-rice-seed").textContent = seeds.rice;
+
+            // Stocks Display
+            document.getElementById("stock-egg").textContent = stocks.egg;
+            document.getElementById("stock-milk").textContent = stocks.milk;
+            document.getElementById("stock-wheat").textContent = stocks.wheat;
+            document.getElementById("stock-corn").textContent = stocks.corn;
+            document.getElementById("stock-rice").textContent = stocks.rice;
+
+            // Crop Field Display
+            document.getElementById("current-planted").textContent = currentCrop ? currentCrop.toUpperCase() : "None";
+            document.getElementById("crop-bar").style.width = growthProgress + "%";
+
+            const harvestBtn = document.getElementById("btn-harvest");
+            const statusTxt = document.getElementById("crop-status");
+
+            if (!currentCrop) {
+                statusTxt.textContent = "Empty Field (Plant a seed)";
+                harvestBtn.disabled = true;
+            } else if (growthProgress >= 100) {
+                statusTxt.textContent = "Ready for Harvest!";
+                harvestBtn.disabled = false;
+            } else {
+                statusTxt.textContent = `Growing ${currentCrop} (${growthProgress}%)`;
+                harvestBtn.disabled = true;
+            }
+        }
+
+        // --- BUY SEEDS ---
+        function buySeed(type, cost) {
+            if (money >= cost) {
+                money -= cost;
+                seeds[type]++;
+                updateUI();
+            }
+        }
+
+        // --- PLANTING & FARMING ---
+        function plantSeed(type) {
+            if (currentCrop !== null) {
+                alert("खेत पहले से भरा है! पहले पुरानी फसल काटें।");
+                return;
+            }
+            if (seeds[type] > 0) {
+                seeds[type]--;
+                currentCrop = type;
+                growthProgress = 0;
+                updateUI();
+            } else {
+                alert("आपके पास इस फसल का बीज नहीं है! पहले सीड मार्केट से खरीदें।");
+            }
+        }
+
+        function addWater() {
+            if (currentCrop && growthProgress < 100) {
+                growthProgress = Math.min(100, growthProgress + 20);
+                updateUI();
+            }
+        }
+
+        function addFertilizer() {
+            if (currentCrop && growthProgress < 100) {
+                growthProgress = Math.min(100, growthProgress + 35);
+                updateUI();
+            }
+        }
+
+        function harvestCrop() {
+            if (currentCrop && growthProgress >= 100) {
+                stocks[currentCrop]++;
+                currentCrop = null;
+                growthProgress = 0;
+                updateUI();
+            }
+        }
+
+        // --- ANIMALS TOUCH LOGIC ---
+        function moveAnimal(element, yardId) {
+            const yard = document.getElementById(yardId);
+            const maxX = yard.clientWidth - 60;
+            const maxY = yard.clientHeight - 60;
+            element.style.left = Math.floor(Math.random() * maxX) + "px";
+            element.style.top = Math.floor(Math.random() * maxY) + "px";
+        }
+
+        setInterval(() => moveAnimal(document.getElementById("chicken-target"), "chicken-yard"), 1800);
+        setInterval(() => moveAnimal(document.getElementById("cow-target"), "cow-yard"), 2400);
+
+        function createPopText(x, y, text) {
+            const pop = document.createElement("div");
+            pop.className = "pop-text";
+            pop.innerText = text;
+            pop.style.left = x + "px";
+            pop.style.top = y + "px";
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 800);
+        }
+
+        function catchChicken(e) {
+            stocks.egg++;
+            createPopText(e.clientX, e.clientY, "+1 🥚");
+            updateUI();
+        }
+
+        function milkCow(e) {
+            stocks.milk++;
+            createPopText(e.clientX, e.clientY, "+1 🥛");
+            updateUI();
+        }
+
+        // --- SHOP SELLING ---
+        function sellItem(item) {
+            const prices = { egg: 8, milk: 25, wheat: 30, corn: 75, rice: 180 };
+            if (stocks[item] > 0) {
+                money += stocks[item] * prices[item];
+                stocks[item] = 0;
+                updateUI();
+            }
+        }
+
+        function sellAll() {
+            sellItem('egg');
+            sellItem('milk');
+            sellItem('wheat');
+            sellItem('corn');
+            sellItem('rice');
+        }
+
+        updateUI();
+    </script>
+</body>
+  </html>
+
